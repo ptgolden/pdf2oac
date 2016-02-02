@@ -1,0 +1,11 @@
+/*
+!/.gitignore
+!/Makefile.am
+!/configure.ac
+
+!/AUTHORS
+!/Copying
+!/README.md
+
+!/autogen.sh
+!/pdfannot.cc
