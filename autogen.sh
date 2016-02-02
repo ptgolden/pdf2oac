@@ -1,3 +1,3 @@
 #!/bin/bash
 
-autoreconf || exit 1
+autoreconf -i || exit 1
