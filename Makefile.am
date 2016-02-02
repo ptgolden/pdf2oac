@@ -1,7 +1,7 @@
-bin_PROGRAMS = pdfannot
+bin_PROGRAMS = pdftooac
 
-pdfannot_SOURCES = pdfannot.cc
-pdfannot_CPPFLAGS = $(POPPLER_CFLAGS)
-pdfannot_LDADD = $(POPPLER_LIBS)
+pdftooac_SOURCES = pdftooac.cc
+pdftooac_CPPFLAGS = $(POPPLER_CFLAGS)
+pdftooac_LDADD = $(POPPLER_LIBS)
 
 MAINTAINERCLEANFILES = Makefile.in

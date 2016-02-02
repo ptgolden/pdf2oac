@@ -1,5 +1,5 @@
-AC_INIT(pdfannot, 0.0.1, Patrick Golden <ptgolden@email.unc.edu>)
-AC_CONFIG_SRCDIR([pdfannot.cc])
+AC_INIT(pdftooac, 0.0.1, Patrick Golden <ptgolden@email.unc.edu>)
+AC_CONFIG_SRCDIR([pdftooac.cc])
 AM_INIT_AUTOMAKE([foreign])
 
 AC_PROG_CXX

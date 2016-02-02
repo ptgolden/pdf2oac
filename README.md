@@ -1,12 +1,20 @@
-# Annotation tool
+# pdftooac: PDF to Open Annotation Core
 
 A command-line tool to extract annotations from PDFs and convert them to the
-[Open Annotation Data Model](http://www.openannotation.org/spec/core/).
+[Open Annotation Core Data Model](http://www.openannotation.org/spec/core/).
+
 
 ## Requirements
   * autotools
   * libpoppler
   * librdf
 
+
 ## Building
+
 `./autogen.sh && ./configure && make`
+
+
+## Usage
+
+pdftooac <input_filename>
