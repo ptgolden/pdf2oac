@@ -17,4 +17,4 @@ A command-line tool to extract annotations from PDFs and convert them to the
 
 ## Usage
 
-pdftooac <input_filename>
+`pdftooac <input_filename>`
