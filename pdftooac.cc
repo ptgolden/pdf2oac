@@ -6,20 +6,10 @@
 #include <Annot.h>
 #include <XRef.h>
 
-int main(int argv, char *args[]) {
-	PDFDoc *doc;
-	Page *page;
-
+void processPage(PDFDoc* doc, Page* page) {
 	Annots *annots;
 	Annot *annot;
 
-	// Hard coded for now; in the future take from args
-	GooString *filename  = new GooString("/home/patrick/Code/projects/annot/test.pdf");
-
-	doc = PDFDocFactory().createPDFDoc(*filename, NULL, NULL);
-	int pages = doc->getNumPages();
-
-	page = doc->getPage(2);
 	annots = page->getAnnots();
 
 	for (int j = 0; j < annots->getNumAnnots(); ++j) {
@@ -46,6 +36,20 @@ int main(int argv, char *args[]) {
 			obj1.free();
 		}
 	}
+}
+
+int main(int argv, char *args[]) {
+	PDFDoc *doc;
+	Page *page;
+
+	// Hard coded for now; in the future take from args
+	GooString *filename  = new GooString("/home/patrick/Code/projects/annot/test.pdf");
+
+	doc = PDFDocFactory().createPDFDoc(*filename, NULL, NULL);
+	int pages = doc->getNumPages();
+
+	page = doc->getPage(2);
+	processPage(doc, page);
 
 	delete filename;
 	delete doc;
