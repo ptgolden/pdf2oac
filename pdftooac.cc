@@ -1,14 +1,22 @@
 #include <stdio.h>
-#include <raptor.h>
-#include <goo/GooString.h>
-#include <PDFDoc.h>
-#include <PDFDocFactory.h>
-#include <Page.h>
-#include <Annot.h>
-#include <XRef.h>
 #include <string>
 #include <unordered_map>
 #include <algorithm>
+
+#include <goo/GooString.h>
+#include <Annot.h>
+#include <CharTypes.h>
+#include <GlobalParams.h>
+#include <Page.h>
+#include <PDFDoc.h>
+#include <PDFDocEncoding.h>
+#include <PDFDocFactory.h>
+#include <UnicodeMap.h>
+#include <UTF.h>
+#include <XRef.h>
+
+#include <raptor.h>
+
 
 namespace NS {
 	const std::string OA = "oa";
@@ -190,7 +198,7 @@ private:
 };
 
 
-void process_page(PDFDoc* doc, raptor_term* pdf_term, int page_number) {
+void process_page(UnicodeMap *u_map, PDFDoc* doc, raptor_term* pdf_term, int page_number) {
 	Page *page;
 	Annots *annots;
 	Annot *annot;
@@ -218,11 +226,24 @@ void process_page(PDFDoc* doc, raptor_term* pdf_term, int page_number) {
 			doc->getXRef()->fetch(ref.num, ref.gen, &annotObj);
 
 			annotObj.dictLookup("MarkupText", &obj1);
-			GooString *text = obj1.getString();
 
-			text_markup = std::string(text->getCString());
-			std::replace(text_markup.begin(), text_markup.end(), '\n', ' ');
-			std::replace(text_markup.begin(), text_markup.end(), '\0', '');
+			GooString *rawString = obj1.getString();
+			Unicode *u;
+			int unicodeLength;
+			char buf[8];
+			int n;
+			std::string output = "";
+
+			unicodeLength = TextStringToUCS4(rawString, &u);
+			for (int i = 0; i < unicodeLength; i++) {
+				n = u_map->mapUnicode(u[i], buf, sizeof(buf));
+				for (int j = 0; j < n; j++) {
+					output += buf[j];
+				}
+			}
+			gfree(u);
+
+			std::replace(output.begin(), output.end(), '\n', ' ');
 
 			OACAnnotation oac_annotation(pdf_term);
 
@@ -232,7 +253,7 @@ void process_page(PDFDoc* doc, raptor_term* pdf_term, int page_number) {
 				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "exact").uri),
 				raptor_new_term_from_literal(
 					rdf_state.world,
-					(const unsigned char*)text_markup.c_str(),
+					(const unsigned char*)output.c_str(),
 					NULL,
 					(const unsigned char*)"en"));
 
@@ -261,9 +282,6 @@ void process_page(PDFDoc* doc, raptor_term* pdf_term, int page_number) {
 				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::RDF, "value").uri),
 				raptor_new_term_from_literal(rdf_state.world, (const unsigned char*)pdf_fragment.c_str(), NULL, NULL));
 
-			// printf("%s", obj1.getString()->getCString());
-
-			raptor_serializer_flush(rdf_state.serializer);
 			annotation_ct += 1;
 			raptor_free_uri(pdf_fragment_standard_uri);
 			annotObj.free();
@@ -278,6 +296,10 @@ int main(int argv, char *args[]) {
 	unsigned char *pdf_uri_string;
 	raptor_uri *pdf_uri;
 	raptor_term *pdf_term;
+	UnicodeMap *uMap;
+
+	globalParams = new GlobalParams();
+	uMap = globalParams->getTextEncoding();
 
 	// Hard coded for now; in the future take from args
 	filename  = new GooString("/home/patrick/Code/projects/annot/test.pdf");
@@ -296,14 +318,15 @@ int main(int argv, char *args[]) {
 		raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::BIBO, "Document").uri));
 
 	for (int i = 1; i < doc->getNumPages(); ++i) {
-		process_page(doc, pdf_term, i);
+		process_page(uMap, doc, pdf_term, i);
 	}
 
 	// Clean up
+	uMap->decRefCnt();
+	delete globalParams;
 	delete filename;
 	delete doc;
 
 	raptor_free_memory(pdf_uri_string);
 	raptor_free_uri(pdf_uri);
-	// raptor_free_term(pdf_term);
 }
