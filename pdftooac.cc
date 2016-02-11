@@ -257,7 +257,7 @@ void process_page(UnicodeMap *u_map, PDFDoc* doc, raptor_term* pdf_term, int pag
 					NULL,
 					(const unsigned char*)"en"));
 
-			raptor_term* fragment_selector_term = oac_annotation.add_selector("TextQuoteSelector");
+			raptor_term* fragment_selector_term = oac_annotation.add_selector("FragmentSelector");
 			raptor_uri* pdf_fragment_standard_uri = raptor_new_uri(
 				rdf_state.world,
 				(const unsigned char*)"http://tools.ietf.org/rfc/rfc3778");
