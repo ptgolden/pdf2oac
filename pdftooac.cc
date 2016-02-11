@@ -83,7 +83,6 @@ public:
 
 	raptor_uri* make_relative_uri(const char* uri_str) {
 		return raptor_new_uri_relative_to_base(world, base_uri, (const unsigned char*)uri_str);
-
 	}
 
 	RaptorURI make_uri(std::string ns, const char* term) {
@@ -137,12 +136,10 @@ public:
 
 	OACAnnotation(raptor_term* pdf_term) {
 		raptor_uri *annotation_uri = numbered_uri("#annotation");
-		raptor_uri *annotation_body_uri = numbered_uri("#body");
-		raptor_uri *annotation_target_uri = numbered_uri("#target");
 
 		annotation_term = raptor_new_term_from_uri(rdf_state.world, annotation_uri);
-		annotation_body_term = raptor_new_term_from_uri(rdf_state.world, annotation_body_uri);
-		annotation_target_term = raptor_new_term_from_uri(rdf_state.world, annotation_target_uri);
+		annotation_body_term = raptor_new_term_from_blank(rdf_state.world, NULL);
+		annotation_target_term = raptor_new_term_from_blank(rdf_state.world, NULL);
 
 		rdf_state.add_triple(
 			annotation_term,
@@ -165,13 +162,13 @@ public:
 			raptor_term_copy(pdf_term));
 
 		raptor_free_uri(annotation_uri);
-		raptor_free_uri(annotation_body_uri);
-		raptor_free_uri(annotation_target_uri);
+	}
+
+	~OACAnnotation() {
 	}
 
 	raptor_term* add_selector(const char* selector_type) {
-		raptor_uri* selector_uri = numbered_uri("selector", "-" + std::to_string(selector_ct));
-		raptor_term* selector_term = raptor_new_term_from_uri(rdf_state.world, selector_uri);
+		raptor_term* selector_term = raptor_new_term_from_blank(rdf_state.world, NULL);
 
 		rdf_state.add_triple(
 			raptor_term_copy(annotation_target_term),
@@ -182,8 +179,6 @@ public:
 			raptor_term_copy(selector_term),
 			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::RDF, "type").uri),
 			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, selector_type).uri));
-
-		raptor_free_uri(selector_uri);
 
 		selector_ct += 1;
 
