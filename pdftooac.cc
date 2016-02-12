@@ -99,7 +99,6 @@ public:
 	}
 
 private:
-	int annotation_ct = 1;
 	static void log_handler(void *user_data, raptor_log_message* message) {
 		fprintf(stderr, "%s\n", message->text);
 	}
@@ -123,31 +122,23 @@ public:
 	raptor_uri* numbered_uri(std::string label) {
 		raptor_uri *uri;
 
-		//std::string str(base);
 		label += std::to_string(annotation_ct);
-
 		uri = rdf_state.make_relative_uri(label.c_str());
 
 		return uri;
 	}
 
-	raptor_uri* numbered_uri(std::string label, std::string postfix) {
-		raptor_uri *uri;
-
-		label += std::to_string(annotation_ct);
-		label += postfix;
-
-		uri = rdf_state.make_relative_uri(label.c_str());
-
-		return uri;
-	}
-
-	OACAnnotation(raptor_term* pdf_term) {
+	OACAnnotation(raptor_term* pdf_term, const char* motivation, bool body = false) {
 		raptor_uri *annotation_uri = numbered_uri("#annotation");
 
 		annotation_term = raptor_new_term_from_uri(rdf_state.world, annotation_uri);
-		annotation_body_term = raptor_new_term_from_blank(rdf_state.world, NULL);
-		annotation_target_term = raptor_new_term_from_blank(rdf_state.world, NULL);
+			annotation_target_term = raptor_new_term_from_blank(rdf_state.world, NULL);
+
+		if (body) {
+			annotation_body_term = raptor_new_term_from_blank(rdf_state.world, NULL);
+		} else {
+			annotation_body_term = NULL;
+		}
 
 		rdf_state.add_triple(
 			annotation_term,
@@ -156,23 +147,27 @@ public:
 
 		rdf_state.add_triple(
 			raptor_term_copy(annotation_term),
-			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "hasBody").uri),
-			annotation_body_term);
+			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "hasTarget").uri),
+			annotation_target_term);
 
 		rdf_state.add_triple(
 			raptor_term_copy(annotation_term),
-			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "hasTarget").uri),
-			annotation_target_term);
+			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "hasMotivation").uri),
+			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, motivation).uri));
 
 		rdf_state.add_triple(
 			raptor_term_copy(annotation_target_term),
 			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "hasSource").uri),
 			raptor_term_copy(pdf_term));
 
-		raptor_free_uri(annotation_uri);
-	}
+		if (body) {
+			rdf_state.add_triple(
+				raptor_term_copy(annotation_term),
+				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "hasBody").uri),
+				annotation_body_term);
+		}
 
-	~OACAnnotation() {
+		raptor_free_uri(annotation_uri);
 	}
 
 	raptor_term* add_selector(const char* selector_type) {
@@ -188,13 +183,8 @@ public:
 			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::RDF, "type").uri),
 			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, selector_type).uri));
 
-		selector_ct += 1;
-
 		return selector_term;
 	}
-
-private:
-	int selector_ct = 1;
 };
 
 
@@ -245,7 +235,7 @@ void process_page(UnicodeMap *u_map, PDFDoc* doc, raptor_term* pdf_term, int pag
 
 			std::replace(output.begin(), output.end(), '\n', ' ');
 
-			OACAnnotation oac_annotation(pdf_term);
+			OACAnnotation oac_annotation(pdf_term, "highlighting");
 
 			raptor_term* quote_selector_term = oac_annotation.add_selector("TextQuoteSelector");
 			rdf_state.add_triple(
