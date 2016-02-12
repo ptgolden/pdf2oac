@@ -128,7 +128,7 @@ public:
 		return uri;
 	}
 
-	OACAnnotation(raptor_term* pdf_term, const char* motivation, bool body = false) {
+	OACAnnotation(raptor_term* pdf_term, int page_number, const char* motivation, bool body = false) {
 		raptor_uri *annotation_uri = numbered_uri("#annotation");
 
 		annotation_term = raptor_new_term_from_uri(rdf_state.world, annotation_uri);
@@ -160,6 +160,22 @@ public:
 			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "hasSource").uri),
 			raptor_term_copy(pdf_term));
 
+		raptor_term* fragment_selector_term = this->add_selector("FragmentSelector");
+		raptor_uri* pdf_fragment_standard_uri = raptor_new_uri(
+			rdf_state.world,
+			(const unsigned char*)"http://tools.ietf.org/rfc/rfc3778");
+
+		std::string pdf_fragment = "#page=" + std::to_string(page_number);
+		rdf_state.add_triple(
+			raptor_term_copy(fragment_selector_term),
+			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "conformsTo").uri),
+			raptor_new_term_from_uri(rdf_state.world, pdf_fragment_standard_uri));
+
+		rdf_state.add_triple(
+			raptor_term_copy(fragment_selector_term),
+			raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::RDF, "value").uri),
+			raptor_new_term_from_literal(rdf_state.world, (const unsigned char*)pdf_fragment.c_str(), NULL, NULL));
+
 		if (body) {
 			rdf_state.add_triple(
 				raptor_term_copy(annotation_term),
@@ -167,6 +183,7 @@ public:
 				annotation_body_term);
 		}
 
+		raptor_free_uri(pdf_fragment_standard_uri);
 		raptor_free_uri(annotation_uri);
 	}
 
@@ -206,36 +223,32 @@ void process_page(UnicodeMap *u_map, PDFDoc* doc, raptor_term* pdf_term, int pag
 		}
 
 		if (annot->getType() == Annot::typeUnderline || annot->getType() == Annot::typeHighlight) {
-			AnnotTextMarkup *underline = static_cast<AnnotTextMarkup *>(annot);
-			std::string text_markup;
-			raptor_term *annotation_term;
+			/* AnnotTextMarkup *underline = static_cast<AnnotTextMarkup *>(annot); */
+
+			const Ref ref = annot->getRef();
 			Object annotObj;
 			Object obj1;
 
-			const Ref ref = annot->getRef();
 			doc->getXRef()->fetch(ref.num, ref.gen, &annotObj);
-
 			annotObj.dictLookup("MarkupText", &obj1);
 
-			GooString *rawString = obj1.getString();
 			Unicode *u;
-			int unicodeLength;
 			char buf[8];
-			int n;
-			std::string output = "";
+			std::string markup_text = "";
+			GooString *rawString = obj1.getString();
 
-			unicodeLength = TextStringToUCS4(rawString, &u);
+			int unicodeLength = TextStringToUCS4(rawString, &u);
 			for (int i = 0; i < unicodeLength; i++) {
-				n = u_map->mapUnicode(u[i], buf, sizeof(buf));
+				int n = u_map->mapUnicode(u[i], buf, sizeof(buf));
 				for (int j = 0; j < n; j++) {
-					output += buf[j];
+					markup_text += buf[j];
 				}
 			}
 			gfree(u);
 
-			std::replace(output.begin(), output.end(), '\n', ' ');
+			std::replace(markup_text.begin(), markup_text.end(), '\n', ' ');
 
-			OACAnnotation oac_annotation(pdf_term, "highlighting");
+			OACAnnotation oac_annotation(pdf_term, page_number, "highlighting");
 
 			raptor_term* quote_selector_term = oac_annotation.add_selector("TextQuoteSelector");
 			rdf_state.add_triple(
@@ -243,16 +256,10 @@ void process_page(UnicodeMap *u_map, PDFDoc* doc, raptor_term* pdf_term, int pag
 				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "exact").uri),
 				raptor_new_term_from_literal(
 					rdf_state.world,
-					(const unsigned char*)output.c_str(),
+					(const unsigned char*)markup_text.c_str(),
 					NULL,
 					(const unsigned char*)"en"));
 
-			raptor_term* fragment_selector_term = oac_annotation.add_selector("FragmentSelector");
-			raptor_uri* pdf_fragment_standard_uri = raptor_new_uri(
-				rdf_state.world,
-				(const unsigned char*)"http://tools.ietf.org/rfc/rfc3778");
-
-			std::string pdf_fragment = "#page=" + std::to_string(page_number);
 			/*
 			PDFRectangle *rect = annot->getRect();
 			pdf_fragment += "&viewrect=";
@@ -262,18 +269,7 @@ void process_page(UnicodeMap *u_map, PDFDoc* doc, raptor_term* pdf_term, int pag
 			pdf_fragment += std::to_string(rect->y2);
 			*/
 
-			rdf_state.add_triple(
-				raptor_term_copy(fragment_selector_term),
-				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::OA, "conformsTo").uri),
-				raptor_new_term_from_uri(rdf_state.world, pdf_fragment_standard_uri));
-
-			rdf_state.add_triple(
-				raptor_term_copy(fragment_selector_term),
-				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::RDF, "value").uri),
-				raptor_new_term_from_literal(rdf_state.world, (const unsigned char*)pdf_fragment.c_str(), NULL, NULL));
-
 			annotation_ct += 1;
-			raptor_free_uri(pdf_fragment_standard_uri);
 			annotObj.free();
 			obj1.free();
 		}
