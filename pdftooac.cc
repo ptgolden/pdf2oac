@@ -19,9 +19,13 @@
 
 
 namespace NS {
+	const std::string DC = "dc";
 	const std::string OA = "oa";
+	const std::string CNT = "cnt";
 	const std::string RDF = "rdf";
+	const std::string RDFS = "rdfs";
 	const std::string BIBO = "bibo";
+	const std::string DC_TYPES = "dctypes";
 }
 
 class RaptorURI {
@@ -54,18 +58,34 @@ public:
 		nsMap[NS::OA] = raptor_new_uri(world, (const unsigned char*)"http://www.w3.org/ns/oa#");
 		raptor_serializer_set_namespace(serializer, nsMap[NS::OA], (const unsigned char*)"oa");
 
+		nsMap[NS::DC] = raptor_new_uri(world, (const unsigned char*)"http://purl.org/dc/elements/1.1/");
+		raptor_serializer_set_namespace(serializer, nsMap[NS::DC], (const unsigned char*)"dc");
+
+		nsMap[NS::DC_TYPES] = raptor_new_uri(world, (const unsigned char*)"http://purl.org/dc/dcmitype/");
+		raptor_serializer_set_namespace(serializer, nsMap[NS::DC_TYPES], (const unsigned char*)"dctypes");
+
+		nsMap[NS::CNT] = raptor_new_uri(world, (const unsigned char*)"http://www.w3.org/2011/content#");
+		raptor_serializer_set_namespace(serializer, nsMap[NS::CNT], (const unsigned char*)"cnt");
+
 		nsMap[NS::BIBO] = raptor_new_uri(world, (const unsigned char*)"http://purl.org/ontology/bibo/");
 		raptor_serializer_set_namespace(serializer, nsMap[NS::BIBO], (const unsigned char*)"bibo");
 
 		nsMap[NS::RDF] = raptor_new_uri(world, raptor_rdf_namespace_uri);
+
+		nsMap[NS::RDFS] = raptor_new_uri(world, (const unsigned char*)"http://www.w3.org/2000/01/rdf-schema#");
+		raptor_serializer_set_namespace(serializer, nsMap[NS::RDFS], (const unsigned char*)"rdfs");
 	}
 
 	~RDFState() {
 		raptor_serializer_serialize_end(serializer);
 
+		raptor_free_uri(nsMap[NS::DC]);
 		raptor_free_uri(nsMap[NS::OA]);
-		raptor_free_uri(nsMap[NS::BIBO]);
+		raptor_free_uri(nsMap[NS::CNT]);
 		raptor_free_uri(nsMap[NS::RDF]);
+		raptor_free_uri(nsMap[NS::RDFS]);
+		raptor_free_uri(nsMap[NS::BIBO]);
+		raptor_free_uri(nsMap[NS::DC_TYPES]);
 		raptor_free_uri(base_uri);
 
 		raptor_free_serializer(serializer);
@@ -216,11 +236,58 @@ void process_page(UnicodeMap *u_map, PDFDoc* doc, raptor_term* pdf_term, int pag
 	for (int j = 0; j < annots->getNumAnnots(); ++j) {
 		annot = annots->getAnnot(j);
 
+		if (annot->getType() == Annot::typeText) {
+			OACAnnotation oac_annotation(pdf_term, page_number, "commenting", true);
+			rdf_state.add_triple(
+				raptor_term_copy(oac_annotation.annotation_body_term),
+				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::RDF, "Type").uri),
+				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::DC_TYPES, "Text").uri));
+
+			rdf_state.add_triple(
+				raptor_term_copy(oac_annotation.annotation_body_term),
+				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::RDF, "Type").uri),
+				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::CNT, "ContentAsText").uri));
+
+			rdf_state.add_triple(
+				raptor_term_copy(oac_annotation.annotation_body_term),
+				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::DC, "format").uri),
+				raptor_new_term_from_literal(rdf_state.world, (const unsigned char*)"text/plain", NULL, NULL));
+
+			rdf_state.add_triple(
+				raptor_term_copy(oac_annotation.annotation_body_term),
+				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::CNT, "chars").uri),
+				raptor_new_term_from_literal(
+						rdf_state.world,
+						(const unsigned char*)annot->getContents()->getCString(),
+						NULL,
+						(const unsigned char*)"EN"));
+
+			annotation_ct += 1;
+		}
+
+
 		if (annot->getType() == Annot::typeStamp) {
 			AnnotStamp *stamp = static_cast<AnnotStamp *>(annot);
 			GooString *subject = stamp->getSubject();
-			// printf("%s\n", subject->getCString());
+
+			OACAnnotation oac_annotation(pdf_term, page_number, "bookmarking", true);
+			rdf_state.add_triple(
+				raptor_term_copy(oac_annotation.annotation_body_term),
+				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::RDF, "Type").uri),
+				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::DC_TYPES, "Image").uri));
+
+			rdf_state.add_triple(
+				raptor_term_copy(oac_annotation.annotation_body_term),
+				raptor_new_term_from_uri(rdf_state.world, rdf_state.make_uri(NS::RDFS, "label").uri),
+				raptor_new_term_from_literal(
+						rdf_state.world,
+						(const unsigned char*)subject->getCString(),
+						NULL,
+						(const unsigned char*)"EN"));
+
+			annotation_ct += 1;
 		}
+
 
 		if (annot->getType() == Annot::typeUnderline || annot->getType() == Annot::typeHighlight) {
 			/* AnnotTextMarkup *underline = static_cast<AnnotTextMarkup *>(annot); */
