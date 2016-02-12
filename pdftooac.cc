@@ -343,7 +343,17 @@ void process_page(UnicodeMap *u_map, PDFDoc* doc, raptor_term* pdf_term, int pag
 	}
 }
 
-int main(int argv, char *args[]) {
+int main(int argc, char **argv) {
+	if (argc != 2) {
+		printf("Usage: pdftoaac <pdf_file>\n");
+		exit(0);
+	}
+
+	if (argv[1] == "-h") {
+		printf("Usage: pdftoaac <pdf_file>\n");
+		exit(0);
+	}
+
 	PDFDoc *doc;
 	GooString *filename;
 	unsigned char *pdf_uri_string;
@@ -351,17 +361,25 @@ int main(int argv, char *args[]) {
 	raptor_term *pdf_term;
 	UnicodeMap *uMap;
 
+	// Hard coded for now; in the future take from args
+	// filename  = new GooString("/home/patrick/Code/projects/annot/test.pdf");
+	filename = new GooString(argv[1]);
+	doc = PDFDocFactory().createPDFDoc(*filename, NULL, NULL);
+	if (!doc->isOk()) {
+		fprintf(stderr, "ERROR: Could not open PDF file %s\n", argv[1]);
+		delete filename;
+		delete doc;
+		exit(1);
+	}
+
+
 	globalParams = new GlobalParams();
 	uMap = globalParams->getTextEncoding();
-
-	// Hard coded for now; in the future take from args
-	filename  = new GooString("/home/patrick/Code/projects/annot/test.pdf");
 
 	pdf_uri_string = raptor_uri_filename_to_uri_string(filename->getCString());
 	pdf_uri = raptor_new_uri(rdf_state.world, pdf_uri_string);
 	rdf_state.start(pdf_uri);
 
-	doc = PDFDocFactory().createPDFDoc(*filename, NULL, NULL);
 
 	pdf_term = raptor_new_term_from_uri(rdf_state.world, pdf_uri);
 
