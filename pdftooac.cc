@@ -205,7 +205,7 @@ void process_page(UnicodeMap *u_map, PDFDoc* doc, raptor_term* pdf_term, int pag
 			// printf("%s\n", subject->getCString());
 		}
 
-		if (annot->getType() == Annot::typeUnderline) {
+		if (annot->getType() == Annot::typeUnderline || annot->getType() == Annot::typeHighlight) {
 			AnnotTextMarkup *underline = static_cast<AnnotTextMarkup *>(annot);
 			std::string text_markup;
 			raptor_term *annotation_term;
