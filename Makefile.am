@@ -1,7 +1,7 @@
-bin_PROGRAMS = pdftooac
+bin_PROGRAMS = pdf2oac
 
-pdftooac_SOURCES = pdftooac.cc
-pdftooac_CPPFLAGS = $(POPPLER_CFLAGS) $(RDF_CFLAGS) $(RAPTOR_CFLAGS)
-pdftooac_LDADD = $(POPPLER_LIBS) $(RDF_LIBS) $(RAPTOR_LIBS)
+pdf2oac_SOURCES = pdf2oac.cc
+pdf2oac_CPPFLAGS = $(POPPLER_CFLAGS) $(RDF_CFLAGS) $(RAPTOR_CFLAGS)
+pdf2oac_LDADD = $(POPPLER_LIBS) $(RDF_LIBS) $(RAPTOR_LIBS)
 
 MAINTAINERCLEANFILES = Makefile.in

@@ -1,4 +1,4 @@
-# pdftooac: PDF to Open Annotation Core
+# pdf2oac: PDF to Open Annotation Core
 
 A command-line tool to extract annotations from PDFs and convert them to the
 [Open Annotation Core Data Model](http://www.openannotation.org/spec/core/).
@@ -17,4 +17,4 @@ A command-line tool to extract annotations from PDFs and convert them to the
 
 ## Usage
 
-`pdftooac <input_filename>`
+`pdf2oac <input_filename>`

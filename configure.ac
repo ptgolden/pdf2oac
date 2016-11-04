@@ -1,5 +1,5 @@
-AC_INIT(pdftooac, 0.0.1, Patrick Golden <ptgolden@email.unc.edu>)
-AC_CONFIG_SRCDIR([pdftooac.cc])
+AC_INIT(pdf2oac, 0.0.1, Patrick Golden <ptgolden@email.unc.edu>)
+AC_CONFIG_SRCDIR([pdf2oac.cc])
 AM_INIT_AUTOMAKE([foreign])
 
 AC_PROG_CXX
